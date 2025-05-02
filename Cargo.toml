@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/qfin",
+    "crates/qfin-api",
+    "crates/qfin-fundamental",
+    "crates/qfin-math",
+    "crates/qfin-ml",
+    "crates/qfin-technical",
+    "crates/qfin-time"
+]
+
+[workspace.package]
+version = "0.0.0"
+authors = ["Jacky Sum <code@jsum.io"]
+edition = "2024"
+description = "Collection of crates for quantitative finance."
+readme = "README.md"
+repository = "https://github.com/jackysum/qfin"
+license = "Apache-2.0"
+keywords = ["quantitative", "finance", "math"]
+categories = ["finance", "mathmatics"]
+
+[workspace.dependencies]
