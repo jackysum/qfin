@@ -11,3 +11,10 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+async-trait.workspace = true
+mockito.workspace = true
+qfin-error.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
