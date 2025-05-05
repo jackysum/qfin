@@ -1,20 +1,14 @@
 use async_trait::async_trait;
 use reqwest::header::{AUTHORIZATION, CONNECTION, CONTENT_TYPE};
-use serde::Deserialize;
 
-use crate::oanda::{Instrument, OandaClient};
+use crate::oanda::{request, response, Candle, Instrument, OandaClient};
 
+#[derive(Clone)]
 pub struct Client {
     client: reqwest::Client,
     account_id: String,
     auth_token: String,
     url: String,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct InstrumentResponse {
-    instruments: Vec<Instrument>,
 }
 
 impl Client {
@@ -31,12 +25,8 @@ impl Client {
             url,
         }
     }
-}
 
-#[async_trait]
-impl OandaClient for Client {
-    async fn instruments(&self) -> Result<Vec<Instrument>, qfin_error::Error> {
-        let url = format!("{}/v3/accounts/{}/instruments", self.url, self.account_id);
+    async fn get(&self, url: String) -> Result<reqwest::Response, qfin_error::Error> {
         let resp = self
             .client
             .get(url)
@@ -47,9 +37,42 @@ impl OandaClient for Client {
             .await
             .map_err(|err| qfin_error::Error::OandaApi(err.to_string()))?;
 
-        let resp = resp.json::<InstrumentResponse>().await.map_err(|err| {
-            qfin_error::Error::OandaApi(format!("deserializing instruments response: {}", err))
-        })?;
+        Ok(resp)
+    }
+}
+
+#[async_trait]
+impl OandaClient for Client {
+    async fn candles(
+        &self,
+        instrument_name: &str,
+        req: Option<request::Candles>,
+    ) -> Result<Vec<Candle>, qfin_error::Error> {
+        let req = req.unwrap_or(request::Candles::default());
+        let url = req.url(self.url.as_str(), instrument_name)?;
+
+        let resp = self
+            .get(url)
+            .await?
+            .json::<response::Candles>()
+            .await
+            .map_err(|err| {
+                qfin_error::Error::OandaApi(format!("deserializing candles response: {}", err))
+            })?;
+
+        Ok(resp.candles)
+    }
+
+    async fn instruments(&self) -> Result<Vec<Instrument>, qfin_error::Error> {
+        let url = format!("{}/v3/accounts/{}/instruments", self.url, self.account_id);
+        let resp = self
+            .get(url)
+            .await?
+            .json::<response::Instruments>()
+            .await
+            .map_err(|err| {
+                qfin_error::Error::OandaApi(format!("deserializing instruments response: {}", err))
+            })?;
 
         Ok(resp.instruments)
     }
@@ -57,17 +80,165 @@ impl OandaClient for Client {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{DateTime, Utc};
     use reqwest::header::{AUTHORIZATION, CONNECTION, CONTENT_TYPE};
 
     use crate::oanda::{
+        candle,
         instrument::{
             DayOfWeek, Financing, FinancingDayOfWeek, GuaranteedStopLossOrderMode, Tag, Type,
         },
-        Client, Instrument, OandaClient,
+        request, Candle, Client, Instrument, OandaClient,
     };
 
     const ACCOUNT_ID: &str = "account_id";
     const AUTH_TOKEN: &str = "auth_token";
+    const INSTRUMENT_NAME: &str = "EUR_USD";
+
+    #[tokio::test]
+    async fn test_candles() {
+        let mut svr = mockito::Server::new_async().await;
+        let url = svr.url();
+        let body = r#"
+            {
+                "candles": [
+                    {
+                        "complete": true,
+                        "volume": 161938,
+                        "time": "2025-05-04T21:00:00.000000000Z",
+                        "bid": {
+                            "o": "1.13013",
+                            "h": "1.13643",
+                            "l": "1.12922",
+                            "c": "1.13140"
+                        },
+                        "mid": {
+                            "o": "1.13062",
+                            "h": "1.13650",
+                            "l": "1.12962",
+                            "c": "1.13150"
+                        },
+                        "ask": {
+                            "o": "1.13110",
+                            "h": "1.13658",
+                            "l": "1.12980",
+                            "c": "1.13159"
+                        }
+                    }
+                ]
+            }
+        "#;
+
+        let mock = svr
+            .mock(
+                "GET",
+                format!("/v3/instruments/{}/candles", INSTRUMENT_NAME).as_str(),
+            )
+            .match_header(AUTHORIZATION, format!("Bearer {}", AUTH_TOKEN).as_str())
+            .match_header(CONNECTION, "Keep-Alive")
+            .match_header(CONTENT_TYPE, "application/json")
+            .with_status(200)
+            .with_body(body)
+            .create_async()
+            .await;
+
+        let client = Client::new(
+            reqwest::Client::new(),
+            ACCOUNT_ID.to_string(),
+            AUTH_TOKEN.to_string(),
+            url,
+        );
+
+        let got = client
+            .candles(INSTRUMENT_NAME, Some(request::Candles::default()))
+            .await
+            .unwrap();
+        let got_candle = got.first().unwrap();
+
+        let want = Candle {
+            time: DateTime::parse_from_rfc3339("2025-05-04T21:00:00.000000000Z")
+                .unwrap()
+                .with_timezone(&Utc),
+            bid: Some(candle::Data {
+                open: 1.13013,
+                high: 1.13643,
+                low: 1.12922,
+                close: 1.13140,
+            }),
+            mid: Some(candle::Data {
+                open: 1.13062,
+                high: 1.13650,
+                low: 1.12962,
+                close: 1.13150,
+            }),
+            ask: Some(candle::Data {
+                open: 1.13110,
+                high: 1.13658,
+                low: 1.12980,
+                close: 1.13159,
+            }),
+            volume: 161938,
+            complete: true,
+        };
+
+        assert_eq!(&want, got_candle);
+        mock.assert()
+    }
+
+    #[tokio::test]
+    async fn test_candles_response_not_success_error() {
+        let mut svr = mockito::Server::new_async().await;
+        let url = svr.url();
+
+        let mock = svr
+            .mock(
+                "GET",
+                format!("/v3/instruments/{}/candles", INSTRUMENT_NAME).as_str(),
+            )
+            .with_status(500)
+            .create_async()
+            .await;
+
+        let client = Client::new(
+            reqwest::Client::new(),
+            ACCOUNT_ID.to_string(),
+            AUTH_TOKEN.to_string(),
+            url,
+        );
+
+        let got = client.candles(INSTRUMENT_NAME, None).await;
+        assert!(got.is_err());
+
+        mock.assert()
+    }
+
+    #[tokio::test]
+    async fn test_candles_response_body_deserialization_error() {
+        let mut svr = mockito::Server::new_async().await;
+        let url = svr.url();
+
+        let mock = svr
+            .mock(
+                "GET",
+                format!("/v3/instruments/{}/candles", INSTRUMENT_NAME).as_str(),
+            )
+            .with_status(200)
+            .with_body("bad json")
+            .create_async()
+            .await;
+
+        let client = Client::new(
+            reqwest::Client::new(),
+            ACCOUNT_ID.to_string(),
+            AUTH_TOKEN.to_string(),
+            url,
+        );
+
+        let got = client.candles(INSTRUMENT_NAME, None).await;
+        assert!(got.is_err());
+
+        mock.assert()
+    }
 
     #[tokio::test]
     async fn test_instruments() {

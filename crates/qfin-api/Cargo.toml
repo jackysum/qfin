@@ -12,6 +12,7 @@ categories.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+chrono.workspace = true
 mockito.workspace = true
 qfin-error.workspace = true
 reqwest.workspace = true

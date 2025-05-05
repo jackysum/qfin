@@ -24,6 +24,7 @@ categories = ["finance", "mathematics"]
 
 [workspace.dependencies]
 async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
 mockito = "1"
 qfin-api = { path = "crates/qfin-api" }
 qfin-error = { path = "crates/qfin-error" }
