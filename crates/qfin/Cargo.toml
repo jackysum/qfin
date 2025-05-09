@@ -11,3 +11,5 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+qfin-api.workspace = true
+qfin-error.workspace = true
