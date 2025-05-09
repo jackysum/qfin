@@ -1,5 +1,5 @@
 [package]
-name = "qfin"
+name = "qfin-data"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -11,7 +11,5 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-qfin-api.workspace = true
-qfin-data.workspace = true
-qfin-error.workspace = true
-qfin-technical.workspace = true
+chrono.workspace = true
+polars.workspace = true
