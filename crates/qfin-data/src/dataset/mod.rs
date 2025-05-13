@@ -1,8 +1,22 @@
 use chrono::NaiveDateTime;
-use polars::{df, frame::DataFrame};
+use polars::{
+    df,
+    error::PolarsResult,
+    frame::DataFrame,
+    prelude::{Expr, IntoLazy},
+};
 
 use crate::Datapoint;
 
+pub mod dsl;
+
+pub const TIME: &str = "time";
+pub const OPEN: &str = "open";
+pub const HIGH: &str = "high";
+pub const LOW: &str = "low";
+pub const CLOSE: &str = "close";
+
+#[derive(Clone)]
 pub struct Dataset {
     pub dataframe: DataFrame,
 }
@@ -24,14 +38,18 @@ impl Dataset {
         });
 
         let dataframe = df!(
-            "time" => times,
-            "open" => opens,
-            "high" => highs,
-            "low" => lows,
-            "close" => closes,
+            TIME => times,
+            OPEN => opens,
+            HIGH => highs,
+            LOW => lows,
+            CLOSE => closes,
         )
         .unwrap();
 
         Dataset { dataframe }
+    }
+
+    pub fn select<E: AsRef<[Expr]>>(&self, exprs: E) -> PolarsResult<DataFrame> {
+        self.dataframe.clone().lazy().select(exprs).collect()
     }
 }
