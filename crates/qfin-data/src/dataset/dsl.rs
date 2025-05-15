@@ -1,15 +1,53 @@
-use ::polars::prelude::cum_fold_exprs;
-use polars::prelude as polars;
+use polars::lazy::dsl::max_horizontal;
+use polars::prelude as pl;
 
-pub fn lit<L>(t: L) -> polars::Expr
+use crate::dataset::{CLOSE, HIGH, LOW, OPEN};
+
+pub fn open() -> pl::Expr {
+    col(OPEN)
+}
+pub fn high() -> pl::Expr {
+    col(HIGH)
+}
+
+pub fn low() -> pl::Expr {
+    col(LOW)
+}
+
+pub fn close() -> pl::Expr {
+    col(CLOSE)
+}
+
+pub fn col<S>(name: S) -> pl::Expr
 where
-    L: polars::Literal,
+    S: Into<pl::PlSmallStr>,
 {
-    polars::lit(t)
+    pl::col(name)
 }
 
-pub fn period_max(col_name: &str, period: usize) -> polars::Expr {
-    polars::col(col_name).rolling_max(polars::RollingOptionsFixedWindow {
+pub fn lit<L>(t: L) -> pl::Expr
+where
+    L: pl::Literal,
+{
+    pl::lit(t)
+}
+
+pub fn row_max<E: AsRef<[pl::Expr]>>(exprs: E) -> pl::Expr {
+    max_horizontal(exprs).unwrap()
+}
+
+pub fn period_mean(expr: pl::Expr, period: usize) -> pl::Expr {
+    expr.rolling_mean(pl::RollingOptionsFixedWindow {
+        window_size: period,
+        min_periods: period,
+        weights: None,
+        center: false,
+        fn_params: None,
+    })
+}
+
+pub fn period_max(expr: pl::Expr, period: usize) -> pl::Expr {
+    expr.rolling_max(pl::RollingOptionsFixedWindow {
         window_size: period,
         min_periods: 1,
         weights: None,
@@ -18,12 +56,20 @@ pub fn period_max(col_name: &str, period: usize) -> polars::Expr {
     })
 }
 
-pub fn period_min(col_name: &str, period: usize) -> polars::Expr {
-    polars::col(col_name).rolling_min(polars::RollingOptionsFixedWindow {
+pub fn period_min(expr: pl::Expr, period: usize) -> pl::Expr {
+    expr.rolling_min(pl::RollingOptionsFixedWindow {
         window_size: period,
         min_periods: 1,
         weights: None,
         center: false,
         fn_params: None,
     })
+}
+
+pub fn shift(expr: pl::Expr, n: i32) -> pl::Expr {
+    expr.shift(pl::lit(n))
+}
+
+pub fn last(expr: pl::Expr) -> pl::Expr {
+    shift(expr, 1)
 }

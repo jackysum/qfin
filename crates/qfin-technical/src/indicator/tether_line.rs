@@ -1,15 +1,22 @@
-use polars::prelude::Expr;
-use qfin_data::dataset::{
-    dsl::{lit, period_max, period_min},
-    HIGH, LOW,
+use qfin_data::{
+    dataset::dsl::{high, lit, low, period_max, period_min},
+    DataColumn,
 };
 
 const DEFAULT_PERIOD: usize = 50;
-const ALIAS: &str = "tether_line";
 
-pub fn expr(period: Option<usize>) -> Expr {
+pub fn alias(period: usize) -> String {
+    format!("tether_line_{}", period)
+}
+
+pub fn calculate(period: Option<usize>) -> DataColumn {
     let period = period.unwrap_or(DEFAULT_PERIOD);
-    let alias = format!("{}_period_{}", ALIAS, period);
+    let alias = alias(period);
 
-    ((period_max(HIGH, period) + period_min(LOW, period)) / lit(2)).alias(alias)
+    let period_high = period_max(high(), period);
+    let period_low = period_min(low(), period);
+
+    let res = ((period_high + period_low) / lit(2)).alias(alias);
+
+    DataColumn::Expr(res)
 }
