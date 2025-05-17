@@ -14,11 +14,12 @@ pub fn alias(period: usize) -> String {
     format!("average_true_range_{}", period)
 }
 
-pub fn calculate(dataframe: DataFrame, period: Option<usize>) -> DataColumn {
+pub fn calculate(dataframe: &DataFrame, period: Option<usize>) -> DataColumn {
     let period = period.unwrap_or(DEFAULT_PERIOD);
     let alias = alias(period);
 
     let series = dataframe
+        .clone()
         .lazy()
         .select([true_range()])
         .collect()

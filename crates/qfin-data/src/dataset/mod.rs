@@ -4,7 +4,7 @@ use polars::{
     error::PolarsResult,
     frame::DataFrame,
     prelude::{Expr, IntoLazy},
-    series,
+    series::Series,
 };
 
 use crate::Datapoint;
@@ -23,8 +23,9 @@ pub struct Dataset {
 }
 
 pub enum DataColumn {
-    Expr(polars::prelude::Expr),
-    Series(series::Series),
+    Expr(Expr),
+    Exprs(Vec<Expr>),
+    Series(Series),
 }
 
 impl Dataset {
@@ -55,18 +56,22 @@ impl Dataset {
         Dataset { dataframe }
     }
 
-    pub fn columns(&mut self, data_columns: Vec<DataColumn>) -> PolarsResult<DataFrame> {
+    pub fn with_columns(self, data_columns: Vec<DataColumn>) -> PolarsResult<Dataset> {
+        let mut dataframe = self.dataframe;
         let mut exprs: Vec<Expr> = vec![];
 
         for data_column in data_columns {
             match data_column {
                 DataColumn::Expr(e) => exprs.push(e),
+                DataColumn::Exprs(e) => exprs.extend(e),
                 DataColumn::Series(s) => {
-                    self.dataframe.with_column(s)?;
+                    dataframe.with_column(s)?;
                 }
             }
         }
 
-        self.dataframe.clone().lazy().with_columns(exprs).collect()
+        Ok(Dataset {
+            dataframe: dataframe.lazy().with_columns(exprs).collect()?,
+        })
     }
 }
