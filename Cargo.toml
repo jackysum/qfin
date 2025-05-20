@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = [ "crates/qfin"]
+members = [ "crates/qfin", "crates/qfin-api"]
 
 [workspace.package]
 authors = ["Jacky Sum <code@jsum.io>"]
@@ -18,3 +18,4 @@ repository = "https://github.com/jackysum/qfin"
 version = "0.0.0"
 
 [workspace.dependencies]
+qfin-api = { version = "0", path = "crates/qfin-api" }
