@@ -1,0 +1,20 @@
+[workspace]
+resolver = "3"
+members = [ "crates/qfin"]
+
+[workspace.package]
+authors = ["Jacky Sum <code@jsum.io>"]
+description = "Collection of Quantitative Finance tools and APIs written in Rust."
+edition = "2024"
+homepage = "https://github.com/jackysum/qfin"
+keywords = [
+    "quantitative",
+    "finance",
+]
+readme = "README.md"
+categories = ["finance", "mathematics"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jackysum/qfin"
+version = "0.0.0"
+
+[workspace.dependencies]
