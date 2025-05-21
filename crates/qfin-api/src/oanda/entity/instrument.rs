@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::oanda::entity::de_decimal_number;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Instrument {
     pub name: String,
@@ -29,7 +29,7 @@ pub struct Instrument {
     pub financing: Financing,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Financing {
     #[serde(deserialize_with = "de_decimal_number")]
@@ -39,14 +39,14 @@ pub struct Financing {
     pub financing_days_of_week: Vec<FinancingDayOfWeek>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FinancingDayOfWeek {
     pub day_of_week: DayOfWeek,
     pub days_charged: i64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum DayOfWeek {
     Sunday,
@@ -58,7 +58,7 @@ pub enum DayOfWeek {
     Saturday,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum GuaranteedStopLossOrderMode {
     Allowed,
@@ -66,14 +66,14 @@ pub enum GuaranteedStopLossOrderMode {
     Required,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Tag {
     #[serde(rename = "type")]
     pub tag_type: String,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Type {
     Cfd,
