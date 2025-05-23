@@ -1,5 +1,5 @@
 [package]
-name = "qfin"
+name = "qfin-api"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
@@ -12,4 +12,12 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-qfin-api.workspace = true
+async-trait.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+mockito.workspace = true

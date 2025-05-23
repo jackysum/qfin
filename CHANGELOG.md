@@ -10,3 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [QFIN] Setup Rust workspace.
+- [QFIN] qfin-api crate to workspace.
+- [QFIN-API] Oanda instruments struct.
+- [QFIN-API] Crate error handling using thiserror.
+- [QFIN-API] Instruments call to Oanda client.
