@@ -7,6 +7,8 @@ use crate::{
     Error,
 };
 
+use super::{entity::Candle, CandlesRequest};
+
 pub struct Client {
     client: reqwest::Client,
     account_id: String,
@@ -26,12 +28,46 @@ impl Client {
 }
 
 #[derive(Debug, Deserialize)]
+struct CandlesResponse {
+    candles: Vec<Candle>,
+}
+
+#[derive(Debug, Deserialize)]
 struct InstrumentsResponse {
     instruments: Vec<Instrument>,
 }
 
 #[async_trait]
 impl DataGetter for Client {
+    async fn candles(
+        &self,
+        instrument_name: &str,
+        req: CandlesRequest,
+    ) -> Result<Vec<Candle>, Error> {
+        let url = req.url(&self.url, instrument_name)?;
+        let resp = self
+            .client
+            .get(url)
+            .header(AUTHORIZATION, format!("Bearer {}", self.auth_token))
+            .header(CONNECTION, "Keep-Alive")
+            .header(CONTENT_TYPE, "application/json")
+            .send()
+            .await
+            .map_err(|e| Error::Request(e.to_string()))?;
+
+        let resp = resp
+            .error_for_status()
+            .map_err(|e| Error::HttpStatus(e.status().unwrap()))?;
+
+        let candles = resp
+            .json::<CandlesResponse>()
+            .await
+            .map_err(|e| Error::DeserializeResponse(e.to_string()))?
+            .candles;
+
+        Ok(candles)
+    }
+
     async fn instruments(&self) -> Result<Vec<Instrument>, Error> {
         let url = format!("{}/v3/accounts/{}/instruments", self.url, self.account_id);
         let resp = self
@@ -64,9 +100,149 @@ mod tests {
     use reqwest::header::{AUTHORIZATION, CONNECTION, CONTENT_TYPE};
 
     use crate::{
-        oanda::{entity::instrument, Client, DataGetter, Instrument},
+        oanda::{
+            entity::{candle, instrument, Candle},
+            CandlesRequest, Client, DataGetter, Instrument,
+        },
         Error,
     };
+
+    #[tokio::test]
+    async fn client_candles_success() {
+        let body = r#"
+            {
+                "instrument": "EUR_USD",
+                "granularity": "D",
+                "candles": [
+                    {
+                        "complete": true,
+                        "volume": 192447,
+                        "time": "2025-05-22T21:00:00.000000000Z",
+                        "bid": {
+                            "o": "1.12792",
+                            "h": "1.13752",
+                            "l": "1.12782",
+                            "c": "1.13621"
+                        },
+                        "mid": {
+                            "o": "1.12807",
+                            "h": "1.13759",
+                            "l": "1.12790",
+                            "c": "1.13649"
+                        },
+                        "ask": {
+                            "o": "1.12822",
+                            "h": "1.13766",
+                            "l": "1.12798",
+                            "c": "1.13677"
+                        }
+                    }
+                ]
+            }
+        "#;
+
+        let account_id = "account_id";
+        let auth_token = "auth_token";
+        let instrument_name = "EUR_USD";
+
+        let mut server = Server::new_async().await;
+        let url = server.url();
+
+        server
+            .mock(
+                "GET",
+                format!("/v3/instruments/{}/candles?price=MBA", &instrument_name).as_str(),
+            )
+            .with_status(200)
+            .with_header(AUTHORIZATION, &format!("Bearer {}", auth_token))
+            .with_header(CONNECTION, "Keep-Alive")
+            .with_header(CONTENT_TYPE, "application/json")
+            .with_body(body)
+            .create_async()
+            .await;
+
+        let want = Candle {
+            complete: true,
+            volume: 192447,
+            time: "2025-05-22T21:00:00.000000000Z".parse().unwrap(),
+            bid: Some(candle::Data {
+                open: 1.12792,
+                high: 1.13752,
+                low: 1.12782,
+                close: 1.13621,
+            }),
+            mid: Some(candle::Data {
+                open: 1.12807,
+                high: 1.13759,
+                low: 1.12790,
+                close: 1.13649,
+            }),
+            ask: Some(candle::Data {
+                open: 1.12822,
+                high: 1.13766,
+                low: 1.12798,
+                close: 1.13677,
+            }),
+        };
+
+        let client = Client::new(reqwest::Client::new(), account_id, auth_token, &url);
+        let got = client
+            .candles(instrument_name, CandlesRequest {})
+            .await
+            .unwrap();
+        let got = got.first().unwrap();
+
+        assert_eq!(&want, got)
+    }
+
+    #[tokio::test]
+    async fn client_candles_error_making_request() {
+        let account_id = "account_id";
+        let auth_token = "auth_token";
+        let instrument_name = "EUR_USD";
+
+        let mut server = Server::new_async().await;
+        let url = server.url();
+
+        server
+            .mock(
+                "GET",
+                format!("/v3/instruments/{}/candles?price=MBA", &instrument_name).as_str(),
+            )
+            .with_status(500)
+            .create_async()
+            .await;
+
+        let client = Client::new(reqwest::Client::new(), account_id, auth_token, &url);
+        let got = client.candles(instrument_name, CandlesRequest {}).await;
+
+        assert!(got.is_err_and(|e| matches!(e, Error::HttpStatus(_))))
+    }
+
+    #[tokio::test]
+    async fn client_candles_error_deserializing_response() {
+        let account_id = "account_id";
+        let auth_token = "auth_token";
+        let instrument_name = "EUR_USD";
+
+        let mut server = Server::new_async().await;
+        let url = server.url();
+
+        server
+            .mock(
+                "GET",
+                format!("/v3/instruments/{}/candles?price=MBA", &instrument_name).as_str(),
+            )
+            .with_status(200)
+            .with_body("bad json response")
+            .create_async()
+            .await;
+
+        let client = Client::new(reqwest::Client::new(), account_id, auth_token, &url);
+        let got = client.candles(instrument_name, CandlesRequest {}).await;
+
+        assert!(got.is_err_and(|e| matches!(e, Error::DeserializeResponse(_))))
+    }
 
     #[tokio::test]
     async fn client_instruments_success() {

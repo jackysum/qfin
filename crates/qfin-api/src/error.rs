@@ -8,4 +8,7 @@ pub enum Error {
 
     #[error("error making request: {0}")]
     Request(String),
+
+    #[error("error parsing url: {0}")]
+    UrlParse(String),
 }
