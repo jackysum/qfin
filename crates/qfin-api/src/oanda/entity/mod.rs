@@ -1,6 +1,9 @@
 use serde::{de, Deserialize, Deserializer};
 use serde_json::Value;
 
+pub mod candlestick;
+pub use candlestick::Candlestick;
+
 pub mod instrument;
 pub use instrument::Instrument;
 
