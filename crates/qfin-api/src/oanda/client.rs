@@ -151,7 +151,7 @@ mod tests {
         server
             .mock(
                 "GET",
-                format!("/v3/instruments/{}/candles?price=MBA", &instrument_name).as_str(),
+                format!("/v3/instruments/{}/candles?price=M&granularity=S5&count=500&smooth=false&includeFirst=true&dailyAlignment=17&alignmentTimezone=America%2FNew_York&weeklyAlignment=Friday", &instrument_name).as_str(),
             )
             .with_status(200)
             .with_header(AUTHORIZATION, &format!("Bearer {}", auth_token))
@@ -187,7 +187,7 @@ mod tests {
 
         let client = Client::new(reqwest::Client::new(), account_id, auth_token, &url);
         let got = client
-            .candles(instrument_name, CandlesRequest {})
+            .candles(instrument_name, CandlesRequest::default())
             .await
             .unwrap();
         let got = got.first().unwrap();
@@ -207,14 +207,16 @@ mod tests {
         server
             .mock(
                 "GET",
-                format!("/v3/instruments/{}/candles?price=MBA", &instrument_name).as_str(),
+                format!("/v3/instruments/{}/candles?price=M&granularity=S5&count=500&smooth=false&includeFirst=true&dailyAlignment=17&alignmentTimezone=America%2FNew_York&weeklyAlignment=Friday", &instrument_name).as_str(),
             )
             .with_status(500)
             .create_async()
             .await;
 
         let client = Client::new(reqwest::Client::new(), account_id, auth_token, &url);
-        let got = client.candles(instrument_name, CandlesRequest {}).await;
+        let got = client
+            .candles(instrument_name, CandlesRequest::default())
+            .await;
 
         assert!(got.is_err_and(|e| matches!(e, Error::HttpStatus(_))))
     }
@@ -231,7 +233,7 @@ mod tests {
         server
             .mock(
                 "GET",
-                format!("/v3/instruments/{}/candles?price=MBA", &instrument_name).as_str(),
+                format!("/v3/instruments/{}/candles?price=M&granularity=S5&count=500&smooth=false&includeFirst=true&dailyAlignment=17&alignmentTimezone=America%2FNew_York&weeklyAlignment=Friday", &instrument_name).as_str(),
             )
             .with_status(200)
             .with_body("bad json response")
@@ -239,7 +241,9 @@ mod tests {
             .await;
 
         let client = Client::new(reqwest::Client::new(), account_id, auth_token, &url);
-        let got = client.candles(instrument_name, CandlesRequest {}).await;
+        let got = client
+            .candles(instrument_name, CandlesRequest::default())
+            .await;
 
         assert!(got.is_err_and(|e| matches!(e, Error::DeserializeResponse(_))))
     }

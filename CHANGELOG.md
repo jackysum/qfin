@@ -14,4 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [QFIN-API] Oanda instruments struct.
 - [QFIN-API] Crate error handling using thiserror.
 - [QFIN-API] Instruments call to Oanda client.
-- [QFIN-API] Oanda candlestick struct.
+- [QFIN-API] Oanda candle struct.
+- [QFIN-API] Candle call to Oanda client.
+- [QFIN-API] Candles request and url builder.

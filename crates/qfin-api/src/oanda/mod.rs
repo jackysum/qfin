@@ -4,7 +4,7 @@ pub mod client;
 pub use client::Client;
 
 pub mod entity;
-use entity::Candle;
+pub use entity::Candle;
 pub use entity::Instrument;
 
 pub mod request;
