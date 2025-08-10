@@ -9,4 +9,6 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+reqwest.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
