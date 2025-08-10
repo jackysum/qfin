@@ -1,0 +1,12 @@
+[package]
+name = "qfin"
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+license.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
