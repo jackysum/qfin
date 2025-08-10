@@ -1,13 +1,16 @@
 [workspace]
 resolver = "3"
-members = ["crates/qfin"]
+members = ["crates/qfin", "crates/qfin-api"]
 
 [workspace.package]
 authors = ["Jacky Sum"]
 categories = ["finance", "mathematics"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/jackysum/qfin"
 version = "0.0.0"
+
+[workspace.dependencies]
+qfin-api = { version = "0.0.0", path = "crates/qfin-api" }
+thiserror = "2"

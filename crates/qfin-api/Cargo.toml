@@ -1,5 +1,5 @@
 [package]
-name = "qfin"
+name = "qfin-api"
 authors.workspace = true
 categories.workspace = true
 edition.workspace = true
@@ -9,4 +9,4 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-qfin-api.workspace = true
+thiserror.workspace = true
