@@ -11,3 +11,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - qfin-api to workspace
 - oanda client to qfin-api
+- instruments request from oanda
