@@ -1,13 +1,23 @@
 [workspace]
 resolver = "3"
-members = ["crates/qfin"]
+members = ["crates/qfin", "crates/qfin-api"]
 
 [workspace.package]
 authors = ["Jacky Sum"]
 categories = ["finance", "mathematics"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/jackysum/qfin"
 version = "0.0.0"
+
+[workspace.dependencies]
+async-trait = "0.1"
+mockall = "0.13"
+mockito = "1.7"
+qfin-api = { version = "0.0.0", path = "crates/qfin-api" }
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
